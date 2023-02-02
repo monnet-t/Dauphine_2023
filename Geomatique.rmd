@@ -20,10 +20,9 @@ pacman::p_load(c("data.table","dplyr","knitr","sf","viridis","leaflet","plotly",
 Les données climatiques peuvent être de différentes formes et selon les usages et les besoins, il faudra parfois les extrapoler avant de s'en servir.\
 Ce cours n'abordera pas la modélisation spatio-temporelles, toutefois un exemple de données de ce type pourra être manipulé.
 
-Avant toute chose il est nécessaire de présenter les formats et outils des données spatiales. En traitement spatial / cartographique (SIG - Système d'Information Géographique), il faut voir chaque donnée comme une couche (un calque). Ces données pouvant se superposer ou contenir des détails (attributs) permettant de les typer et les comprendre. La jointure entre 2 couches se fait via une superposition spatiale et non par une clé unique.  
+Avant toute chose il est nécessaire de présenter les formats et outils des données spatiales. En traitement spatial / cartographique (SIG - Système d'Information Géographique), il faut voir chaque donnée comme une couche (un calque). Ces données pouvant se superposer ou contenir des détails (attributs) permettant de les typer et les comprendre. La jointure entre 2 couches se fait via une superposition spatiale et non par une clé unique.
 
 ![](D:/Utilisateurs/s046120/Pictures/carto.jpg){height="600"}
-
 
 ### 1.0 Toute carte est fausse
 
@@ -60,8 +59,8 @@ map("usa",proj = 'azequidistant')
 # 1 - Charger une carte du Groenland (préalablement téléchargée sur internet, cf. cours)
 G_sf <- st_read("./data/sd368wz2435.shp")
 class(G_sf)
-head(G_sf)
-names(G_sf)
+# head(G_sf)
+# names(G_sf)
 # Représentation cartographique (choroLayer / typoLayer)
 cartography::typoLayer(G_sf,var = "popsqkm")
 
@@ -77,13 +76,13 @@ set_units(st_area(G_sf),"km^2")/set_units(G_sf$sqkm,"km^2")
 
 ### 1.1 Les données vectorielles
 
-Les données spatiales vectorielles font références aux points, à la ligne et aux polygones. 
+Les données spatiales vectorielles font références aux points, à la ligne et aux polygones.
 
 #### 1.1.a Les **Points**
 
 Les **points** sont identifiés par des coordonnées à 2 dimensions (longitude et latitude) et pour un système de projection donné. Il s'agit par exemple de la localisation géographique d'une adresse (on parlera de géocodage des adresses) ou encore d'un lieu d'intérêt (point de vue, emplacement d'une station météorologique ou de mesure de débit d'une rivière...). C'est le niveau le plus simple.
 
-Pour visualiser les points, le script suivant permet de télécharger et de mettre en forme les trajectoires des ouragans dans le bassin Atlantique Nord depuis 1851. 
+Pour visualiser les points, le script suivant permet de télécharger et de mettre en forme les trajectoires des ouragans dans le bassin Atlantique Nord depuis 1851.
 
 ```{r Points}
 # 1 - Charger les données sur les ouragans du NHC : https://www.aoml.noaa.gov/hrd/hurdat/hurdat2.html 
@@ -127,12 +126,9 @@ AtlanticSF <- st_as_sf(Atlantic, coords = c("Lon","Lat"), crs = 4326)
 
 ```
 
-
 #### 1.1.b Les **lignes**
 
-Les **lignes** sont des points reliés entre eux et ne formant pas un chemin clos, on parlerait sinon de *polygones*.
-Si l'on revient à nos ouragans, l'exercice suivant consiste à relier entre eux les points, par système, pour former des lignes de trajectoire.
-
+Les **lignes** sont des points reliés entre eux et ne formant pas un chemin clos, on parlerait sinon de *polygones*. Si l'on revient à nos ouragans, l'exercice suivant consiste à relier entre eux les points, par système, pour former des lignes de trajectoire.
 
 ```{r Lignes}
 # 1 - Les fonctions de SF pour créer des lignes (ou des multi-lignes)
@@ -150,15 +146,12 @@ plot(st_geometry(tst))
 
 ```
 
-
-
 #### 1.1.c Les **polygones**
 
-Les **polygones** sont des lignes reliées entre elles et formant un chemin clos, cela peut correspondre notamment aux contours d'une île.  
-L'étape suivante consiste à récupérer et tracer la Martinique (car les données sont simple d'accès).  
-Dans un second temps nous pourrons travailler sur une carte dynamique pour mieux visualiser les résultats.  
+Les **polygones** sont des lignes reliées entre elles et formant un chemin clos, cela peut correspondre notamment aux contours d'une île.\
+L'étape suivante consiste à récupérer et tracer la Martinique (car les données sont simple d'accès).\
+Dans un second temps nous pourrons travailler sur une carte dynamique pour mieux visualiser les résultats.\
 Pour réaliser les cartes il est nécessaire de récupérer les fonds de cartes, certains peuvent être disponibles directement dans les données de R (et de ses librairies), à défaut des cartes par département sont disponible sur [data.gouv](https://www.data.gouv.fr/en/datasets/carte-des-departements-2-1/)
-
 
 ```{r polygones}
 # 1 - Charger les données de la Martinique (disponible aussi dans Cartography)
@@ -177,13 +170,11 @@ leaflet(mtq2, height = "500") %>% addTiles() %>% addPolylines(data = tst) %>% ad
 
 ```
 
-Ces cartes permettant d'empiler les données nous permettent d'envisager un comptage des systèmes ayant traversé la Martinique depuis 1851...  
-
+Ces cartes permettant d'empiler les données nous permettent d'envisager un comptage des systèmes ayant traversé la Martinique depuis 1851...
 
 ### 1.2 Les opérations basiques sur les données vectorielles
 
-Une fois les données récupérées et chargées ou mises en carte, il est possible d'effectuer des opérations avec.
-Notamment avec les polygones, pour les regrouper, par exemple...
+Une fois les données récupérées et chargées ou mises en carte, il est possible d'effectuer des opérations avec. Notamment avec les polygones, pour les regrouper, par exemple...
 
 ```{r vect_base}
 
@@ -228,9 +219,9 @@ plot(st_geometry(mtq_v), col='lightblue')
 
 ```
 
-Les **polygones de Thiessen ou de Voronoï** sont des polygones formant un pavage intégral dans lequel chaque point est entouré par un espace (une « cellule ») comprenant tous les points plus proches de ce point que d'un autre. Fondamentaux en modélisation spatiale, leur usage est devenu plus courant en géographie à mesure que les outils de calcul informatique se sont démocratisés. « Dans un réseau parfait de centres équipotents, les polygones de Thiessen sont des hexagones », précise Roger Brunet (2017), ce qui renvoie à la théorie des lieux centraux.  
+Les **polygones de Thiessen ou de Voronoï** sont des polygones formant un pavage intégral dans lequel chaque point est entouré par un espace (une « cellule ») comprenant tous les points plus proches de ce point que d'un autre. Fondamentaux en modélisation spatiale, leur usage est devenu plus courant en géographie à mesure que les outils de calcul informatique se sont démocratisés. « Dans un réseau parfait de centres équipotents, les polygones de Thiessen sont des hexagones », précise Roger Brunet (2017), ce qui renvoie à la théorie des lieux centraux.
 
-C'est une façon de découper un territoire à partir de points. Par exemple si vous disposez de 600 points de mesure du vent en France (à un instant t), vous pouvez découper la France en polygones de Voronoi, puis calculer dans chaque polygone une estimation des vitesses du vent au sein de chaque polygone et cela en fonction des points le constituant. 
+C'est une façon de découper un territoire à partir de points. Par exemple si vous disposez de 600 points de mesure du vent en France (à un instant t), vous pouvez découper la France en polygones de Voronoi, puis calculer dans chaque polygone une estimation des vitesses du vent au sein de chaque polygone et cela en fonction des points le constituant.
 
 ```{r cartography}
 # save map
@@ -248,23 +239,20 @@ propSymbolsLayer(x = mtq,
 mtext(text = "Population en Martinique", side = 3, line = -1)
 dev.off()
 ```
-On peut à présent utiliser l'image :
-![](./data/map1.png) 
 
+On peut à présent utiliser l'image : ![](./data/map1.png)
 
-
-### 1.3 Les données Raster 
+### 1.3 Les données Raster
 
 Les données spatiales de type Raster sont assimilables à des images ou à des matrices. En d'autres termes ce sont des grilles espacées spatialement et comportant à chaque noud ou intersection une ou plusieurs informations. Visuellement ces éléments peuvent être représentés comme des images.
 
-La définition du raster et sa projection géographique permettant de connaître l'espacement de ce maillage.  
-Un raster peut se composer de plusieurs couches (les images en ont 3) et chaque couche portera une information.  
+La définition du raster et sa projection géographique permettant de connaître l'espacement de ce maillage.\
+Un raster peut se composer de plusieurs couches (les images en ont 3) et chaque couche portera une information.
 
-Certains format de données prennent également en charge la temporalité, ainsi il est possible qu'une couche d'un raster comporte l'axe temporel.  
+Certains format de données prennent également en charge la temporalité, ainsi il est possible qu'une couche d'un raster comporte l'axe temporel.
 
-
-Les scripts suivant vous sont donnés afin de visualiser ce que sont les raster, ce cours ne les utilisera pas.  
-De plus, quelques scripts permettent de traiter les données du CMIP de projections climatiques, dans le passé (afin de valider ces projections) et surtout dans le futur selon les différents scénarios présentés dans les publications du GIEC.  
+Les scripts suivant vous sont donnés afin de visualiser ce que sont les raster, ce cours ne les utilisera pas.\
+De plus, quelques scripts permettent de traiter les données du CMIP de projections climatiques, dans le passé (afin de valider ces projections) et surtout dans le futur selon les différents scénarios présentés dans les publications du GIEC.
 
 Vous trouverez notamment un script permettant de transformer les composantes u et v du vent (cf. cours) puis de filtrer les périodes temporelles pendant lesquels nous détections des vents moyens correspondant, à minima, à une tempête tropicale. Cette méthode s'inspire du mémoire d'actuariat cité dans le support du cours et s'arrête uniquement à l'identification, elle ne réalise ni le comptage indépendant ni la constitution des traces.
 
@@ -272,18 +260,13 @@ Vous trouverez notamment un script permettant de transformer les composantes u e
 
 ```
 
-
-
 # TP n°2 : Identification des systèmes cyclonique ayant approché les Antilles Françaises
 
-L'objectif de ce TP est d'isoler les systèmes ayant traversé l'arc Antillais à proximité de nos îles, de les dénombrer selon leur intensité et si possible de calculer une période de retour, par intensité, de ces phénomènes.   
+L'objectif de ce TP est d'isoler les systèmes ayant traversé l'arc Antillais à proximité de nos îles, de les dénombrer selon leur intensité et si possible de calculer une période de retour, par intensité, de ces phénomènes.
 
-Pour simplifier le calcul nous prendrons 3 points (centroïdes) pour représenter les îles de la Martinique, la Guadeloupe et de St Martin (et St Barthélémy). Cette étape a déja été réalisée. 
+Pour simplifier le calcul nous prendrons 3 points (centroïdes) pour représenter les îles de la Martinique, la Guadeloupe et de St Martin (et St Barthélémy). Cette étape a déja été réalisée.
 
-Pour la première sélection, il est recommandé de comptabiliser les systèmes approchant à moins de 100km de ces points.
-Une fois les trajectoires sélectionnées, il faudra les catégoriser, par exemple avec le point le plus proche de nos îles pour chaque trajectoire.
-Enfin et si le temps le permet, une méthode permettant de passer de ce comptage à l'estimation des périodes de retour pourra être rappelé (n'hésitez pas à proposer vos idées).
-
+Pour la première sélection, il est recommandé de comptabiliser les systèmes approchant à moins de 100km de ces points. Une fois les trajectoires sélectionnées, il faudra les catégoriser, par exemple avec le point le plus proche de nos îles pour chaque trajectoire. Enfin et si le temps le permet, une méthode permettant de passer de ce comptage à l'estimation des périodes de retour pourra être rappelé (n'hésitez pas à proposer vos idées).
 
 ```{r TP}
 # 0 - Les Antilles françaises
@@ -293,5 +276,3 @@ df <- as.data.frame(list(Ile = c("St Martin","Guadeloupe","Martinique"),
 # 1 - ?
 
 ```
-
-
