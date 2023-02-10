@@ -1,0 +1,129 @@
+---
+title: "Enjeux climatique en assurance : Focus sur le risque ouragan en Martinique"
+author: "Thibault MONNET"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# FOCUS - RISQUE OURAGAN EN MARTINIQUE
+
+Avant toute chose, il semble important de rappeler que le cours n°2 traite partiellement de ce sujet. Il sera donc utile de se référer au dernier TP. De plus un exemple d'outil R pour la consultation des ouragans (écrit par Sean JUSTICE) est disponible [https://coveaprm.shinyapps.io/Hurricane_viewer/](ici), tout comme son [https://nycdatascience.com/blog/student-works/visualizing-hurricane-data-with-shiny/](blog).
+
+## Les étapes d'un modèle CAT
+
+Pour modéliser les impacts économiques d'un modèle dit de Catastrophe ou Modèle Cat (applicable aux risques extrêmes) nous distinguerons plusieurs composantes. Parmi lesquelles :
+
+1.  L'aléa : ce module permet de comprendre le risque naturelle modélisé
+2.  L'exposition : il s'agit de comprendre qui est exposé à l'aléa
+3.  La vulnérabilité : on peut être exposé à un aléa et y être plus moins sensible / vulnérable
+4.  La résilience : parfois confondu avec la vulnérabilité, c'est une mesure des capacités à faire face après l'évènement, le Japon a des capacités de reconstruction post tremblement de terre très forte.
+5.  Les pertes : une fois les étapes précédentes étudiées, il est possible d'analyser les pertes en les intégrant à un modèle
+
+### 1. L'aléa
+
+Le cours jusqu'à aujourd'hui a principalement porté sur cette partie, qui est très souvent liée au climat ou a des notions de physique et de connaissance / compréhension du monde qui nous entoure. C'est la partie la plus complexe à modéliser.
+
+Une façon de décrire l'aléa ouragan, pour la partie vent, consiste à déterminer l'intensité de l'évènement selon l'échelle de Saffir-Simpson
+
+![Echelle de Saffir-Simpson](https://nycdsa-blog-files.s3.us-east-2.amazonaws.com/2019/09/7f1c8f94874e01d4d1439428b43ab51e/saffir-simpson-scale.png)
+
+NB : 1 nœud (kn) est équivalent à 1.852 km/h, ainsi 64 nœuds, la vitesse de vent moyen d'un ouragan de 1ère catégorie, est d'environ 119 km/h.
+
+### 2. L'exposition
+
+"Un bon schéma vaut mieux qu'un long discours"
+
+![Exposition au Risque Inondation](images/alea_inondation.png "alea_inond")
+
+Cette image illustre que selon le point que l'on utilisera pour identifier un bien assuré, la précision utilisée permettra d'estimer plus ou moins correctement l'exposition au risque inondation.
+
+L'opération permettant de passer d'une adresse à une coordonnée géographique s'appelle le **Géocodage** qui est devenu une évidence grâce à Google Maps.
+
+Selon les aléa étudiés, l'exposition peut être ciblée (comme sur l'exemple précédent de l'inondation) ou non, ainsi le risque de tempête ou d'ouragan va concerner toute personne et tout bâtiment présent dans une zone où les ouragans peuvent sévir.
+
+### 3. La vulnérabilité
+
+Si un bien est exposé, se pose la question de sa vulnérabilité. Les normes de construction française permettent d'estimer des vitesses de vent pour lesquelles les dommages devraient inexistant ou faible (selon l'entretien des biens). Cela s'applique très bien à la résistance au vent. Concernant l'inondation, si une maison est en zone inondable et qu'elle est construite sur pilotis, elle sera moins vulnérable.
+
+![Vulnerabilité aux vents cycloniques - normes de construction dans les Antilles Françaises](images/vulnerabilite_ouraga.png "vuln_ourag")
+
+### 4. La résilience
+
+Cette étape consiste à évaluer si un pays, une zone géographique, pour les ouragans en Martinique : l'île de la Martinique, est en capacité à faire face aux conséquence d'un évènement extrême. En général, il y a des limites matérielles et humaines qui sont à prendre en considération. Le dépassement de ces limites va engendrer un coût supplémentaire, on peut parler de sur-inflation.
+
+Typiquement, si 5 à 10 % des maison d'une zone nécessitent des interventions urgentes pour être mises en sécurité (bâchage, étayage...) la question des limites peut se poser sur le matériel --- en avons nous en quantité suffisante ? --- et aussi sur le plan humain --- avons nous assez de couvreurs pour réparer les toits ?
+
+Maintenant, si cette même zone fait face non plus à 5 à 10 % de dégâts mais à plus de 80%, ces limites seront atteintes, les travaux seront forcément plus long et forcément plus cher. Le marché de l'offre et la demande feront que les prix augmenteront et ce de manière très sensibles.
+
+Pour les ouragans extrêmes, cette limite, ce point de rupture est au niveau de la catégorie 3. Nous parlons ici que de l'aspect financier, il faut rappeler que de telles catastrophes peuvent générer des problèmes plus grave, liés à la **survie des personnes** et notamment à l'approvisionnement en eau potable, en nourriture puis en électricité... Sans cela pas de réparation possible !
+
+### 5. Les pertes
+
+Dernière étape de la modélisation Cat, il s'agit de faire le lien entre tous les éléments avec un modèle statistique (une loi) ou d'autres théories. Il est possible d'avoir des approches macro-écnomiques (comme nous le ferons dans le cours) et des approches plus fines et plus locales, qui nécessitent des données précises. Des pistes de réflexion seront données en fin de cours pour trouver ces éléments précis, au niveau du marché, afin d'élargir le champ des possibles.
+
+## Application aux ouragans en Martinique
+
+Il s'agit ici d'appliquer les notions présentée ci-dessus à notre sujet.
+
+### 1. Les ouragans en Martinique
+
+#### 1.1. Les évènements historiques
+
+Dans cette partie, il s'agira de reprendre ce qui a été fait lors du TP précédent en se focalisant uniquement sur la Martinique.
+
+Afin de définir la taille du Buffer, je propose une étape préalable d'analyse des autres critères de la base Hurdat, à savoir la distance à laquelle il est possible d'observer des vents supérieurs ou égaux à 64 nœuds.
+
+#### 1.2. La dispersion des vents
+
+Maintenant que nous disposons d'une série d'évènement, comment les vents se sont-ils réellement comportés ? Pour cette étape il existe plusieurs modèles, plus ou moins précis, utilisant les données à notre disposition et/ou d'autres.
+
+Pour ce cours, nous nous simplifierons la vie, nous allons tenter de projeter le vent en fonction des points à notre disposition par un traitement spatial.
+
+### 2. L'exposition aux Ouragans
+
+Cette partie est assez rapide, dès lors que l'on réside sur l'île, si l'emprunte de vents (construite à l'étape précédente) nous concerne, nous sommes exposés.
+
+L'INSEE propose des données carroyées (spatiales) à une maille de 1km, permettant d'estimer la population dans la zone, le nombre de ménage, de logement... Nous travaillerons sur ces éléments.
+
+### 3. La vulnérabilité en Martinique
+
+Les normes de construction aux Antilles françaises intègrent le risque cyclonique, en tout cas sa partie basse. On peut notamment retrouver ces normes sur le site [suivant](https://www.dlubal.com/fr/zones-de-neige-de-vent-et-de-sismicite/vent-nf-en-1991-1-4.html#&center=44.69283662784916,13.690389420864472&zoom=5&marker=48.854663,2.346203). En Martinique la valeur de base de la vitesse de référence du vent, pour les constructions, a été fixé à 32 m/s (115 km/h).
+
+Dans un calcul exact, nous devrions intégrer un ajustement selon la probabilité et la direction du vent, ainsi que des altérations selon la rugosité du terrain (végétation, urbanisation...) et le relief. Une fois les calculs effectués localement, les constructions neuves sont sensée résister à à une vitesse de vent maximales. On notera que des vitesses inférieures pourrons néanmoins engendrer des dommages réduits.
+
+De plus, un grand nombre de bâtiments anciens ou récents, ne respectent pas ces normes, nous avons donc plusieurs courbes de dommages selon le type de bien. Afin de ne pas compliquer trop les choses, nous pourrons prendre une approche moyenne sur l'île.
+
+Dans la littérature scientifique, nous disposons d'une équation permettant de passer d'une vitesse de vent à une fréquence de dommage. Cette équation utilise 2 vitesses : une vitesse à partir de laquelle les dommages sont observables et une vitesse à partir de laquelle 50% des bâtiments sont endommagés. Il s'agite de l'équation du professeur Emanuel K. :
+
+```{r emanuel}
+
+emanuel <- function(V,Vthreshold,Vhalf) { 
+  v <- pmax(0,V-Vthreshold)/(Vhalf-Vthreshold)
+  f <- v^3 / (1 + v^3)
+  return(f)
+}
+emanuel(180,60,200)
+
+```
+
+Pour la suite du cours nous partirons du principe qu'en Martinique cette courbe d'endommagement est calée avec une vitesse minimale de 115 km/h (la norme de 32 m/s) et 200 km/h pour la destruction partielle. Afin d'être plus précis, il faudrait calibrer ces courbes sur des données réelles et/ou les ajuster selon le niveau d'urbanisation autour du bâtiment et aussi selon le bâtiment.
+
+### 4. La résilience en Martinique
+
+Cette étape est à discuter, nous manquons de recul pour avoir une estimation chiffrées, toutefois si un ouragan majeur (de catégorie 3 ou +) venait à traverser de part en part l'île, cela engendrerait des pertes importantes et amplifiées par le manque de matériaux, la distance à la France et donc le recours à des matériaux américain (par exemple). A moins que l'état prenne des mesures visant à réduire les frais de douane, cela pourrait coûter très cher.
+
+Nous pouvons imaginer également qu'une solidarité se mettrait en place, aux Antilles, avec des artisans et professionnels du bâtiment qui irait (pour un temps) aider à reconstruire chez leurs voisins. Cette solidarité pourrait également se faire entre la métropole et la Martinique, cela aurait nécessairement un cout.
+
+Pour cette partie, nous disposons sur R de quelques données (ancienne) de pertes associées à des ouragans aux états-unis et nous verrons si nous pouvons trouver, en croisant ces éléments à ceux de notre base, un seuil de rupture, que nous reproduirions aux Antilles.
+
+### 5. Les pertes associées
+
+Une fois toutes les étapes précédentes traitées, nous disposerons d'un premier modèle d'estimation des pertes associées à des ouragans en Martinique. Ces éléments restent théoriques et ne peuvent être utilisés directement. Toutefois vous disposerez à la fin de ce cours de votre premier modèle Cat.
+
+## Pour aller plus loin
+
+Une fois un ou plusieurs modèles dit "déterministes" constitué, le modélisateur Cat cherchera à se constituer un catalogue d'évènements probables sur lesquels il pourra appliquer son modèle. Par la suite, il pourra, s'il possède une probabilité associée à des pertes, établir une courbe de pertes probabilisée, on parle de *EP curves*, pour Excess Probabilité. Il en existe plusieurs, des courbes par évènement qui permettent (sur la base du second modèle du TP) d'affecter une période de retour à chaque évènement, on parle de OEP (observed). Et si l'on résonne sur un exercice financier ou sur une saison climatique, on parlera de courbe de pertes cumulées, AEP (Agregated).
+
+Pour réaliser ces courbes, on utilise des approches dites **stochastiques**, qui consistent à reproduire par simulation de Monte-Carlo des années types d'évènements climatiques. A noter que ces simulateurs peuvent faire appel à des chaînes de Markov, on parle alors de MCMC.
+
+On notera que ces modèles utilisent une approche bayésienne, comme nous l'avons mis en avant dans le TP, parfois ces approches sont même simplifiées. La conséquence directe de cela réside dans la maintenance, en effet le choix de la loi a priori et son ajustement révisé peut modifier l'intégralité de la chaîne.

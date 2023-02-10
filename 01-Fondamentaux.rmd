@@ -1,0 +1,223 @@
+---
+title: "Enjeux climatique en assurance : Fondamentaux de l'assurance"
+author: "Thibault MONNET"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F)
+```
+
+# Dauphine 2023
+
+
+## 1. Histoire
+
+L'histoire fait trÃ¨s rapidement apparaÃ®tre que l'entraide et la solidaritÃ©, se sont traduits par la crÃ©ation de solutions Ã©conomiques pour encadrer ces notions. \
+D'un point de vue phylosophique, l'assurance dans sa forme premiÃ¨re pourrait Ãªtre aussi vieille que la sociÃ©tÃ© humaine et elle existera, en s'adaptant, jusqu'Ã  sa fin. \
+
+Si l'histoire permet de savoir d'oÃ¹ nous venons, elle apporte pour les risques naturelles (dont les risques climatiques) un Ã©clairage indÃ©gnable. En effet, l'assurance moderne permet de remonter assez facilement jusqu'au annÃ©es 1980, bien que le monde ait Ã©voluÃ© et que les risques assurÃ©s Ã©galement... Pour trouver des Ã©lÃ©ments plus anciens, quand bien mÃªme l'on travaillerait dans une sociÃ©tÃ© vieille de 200 ans, cela se complique. \
+L'histoire c'est avant tout une profondeur de donnÃ©es et des descriptifs permettant de reconstituer le passÃ© pour en tirer des leÃ§ons. On peut citer les Ã©ruptions volcaniques (le VÃ©suve 79 AD), les crues de l'Arno Ã  Florence de 1333, 1547 ou encore 1844... L'homme prend des notes de ces catastrophes, car elles le marque et Ã©galement afin d'aider les gÃ©nÃ©rations futures. Aujourd'hui, la collecte de ces donnÃ©es est un travail de fourmis, toutefois il semble nÃ©cessaire pour mieux comprendre notre monde.\
+
+Avez-vous une idÃ©e de la probabilitÃ© d'observer 1 Ã©vÃ¨nement bicentennale sur une pÃ©riode de 30 ans ? \\
+D'en observer au moins 1 sur une pÃ©riode de 200 ans ?
+Et d'en observer 2 sur une pÃ©riode de 50 ans ?\
+
+
+```{r histoire}
+P <- 1/200
+tirage <- 30
+reussite <- 1
+round(pnbinom(tirage-reussite,reussite,P)*100,2)
+
+```
+
+Je vous invite Ã  lire les travaux de JÃ©rÃ©my DESARTHE [@Desarthe2014] sur les ouragans et submersions dans les Antilles franÃ§aise entre le XVII^Ã¨me^ et le XX^Ã¨me^ siÃ¨cle.
+
+
+## 2. Les fondamentaux
+
+Dans cette partie du cours, une premiÃ¨re partie thÃ©orique consistera Ã  poser quelques dÃ©finitions nÃ©cessaires Ã  la comprÃ©hension de l'assurance, diffÃ©rencier l'assurance vie de l'assurance dommages (ou IARD) et faire le lien entre ces couvertures et les risques climatiques. La seconde Ã©tape va consister Ã  dÃ©finir et manipuler les indicateurs classiques qui sont utilisÃ©s dans la profession (IARD).\
+
+Contrat, exposition, frÃ©quence sinistre, coÃ»t moyen, dossiers avec ou sans suite, prime pure, ratio S/P ou S/C, ratio combinÃ©... Des notions techniques permettant d'analyser les risques assurÃ©s et nÃ©cessaires Ã  l'Ã©laboration d'une stratÃ©gie globale de l'entreprise. \
+
+Ces critÃ¨res sont d'autant plus important qu'il faudra traduire les pertes engendrÃ©es par un Ã©vÃ¨nements extrÃªmes sur ces notions (et parfois d'autres !)
+
+
+### 2.A L'assurance : un contrat
+
+Cela implique un engagement lÃ©gal et donc une connaissance juridique : Code des Assurance et de la mutualitÃ©.\
+
+Nous y reviendrons, une partie des tarifs sont rÃ©glementÃ©s, notamment sur la partie assurance des biens face aux Catastrophes Naturelles.  
+
+Les diffÃ©rents type de sociÃ©tÃ©s et de contrats ayant Ã©tÃ© introduits dans le cours, la suite s'attardera sur l'assurance IARD, ou assurance de biens et responsabilitÃ©s.
+
+### 2.B L'assurance IARD : des indicateurs clÃ©s
+
+A noter que les indicateurs qui vont Ãªtre prÃ©sentÃ©s ici peuvent servir en assurance de personnes, la dÃ©finition exacte du calcul pouvant Ã©voluer...
+
+#### Les notions de base 
+
+**Portefeuille** : photo Ã  un instant t des contrats assurÃ©s, au niveau du marchÃ© on parlera aussi de *Parc*.  
+**Exposition** : cette notion fait rÃ©fÃ©rence Ã  la part du portefeuille exposÃ©e Ã  un risque. En modÃ©lisation climatique, oÃ¹ l'on fait le lien entre un Ã©vÃ¨nement Ã  un instant t et la sinistralitÃ©, 1 contrat exposÃ© compte pour 1. En tarification on va Ã©tudier la "vidÃ©o de l'annÃ©e" et dans ce cas l'exposition se compte au prorata-temporis, sur 1 an si le contrat est assurÃ© 6 mois, il comptera pour 0.5 car il aura Ã©tÃ© exposÃ© Ã  50%.  
+
+
+**Sinistre** : toute dÃ©claration par un assurÃ© d'un dommage   
+**Sinistre sans suite** : il s'agit d'un sinistre n'Ã©tant pas couvert par le contrat et n'engendrant pas de dÃ©pense pÃ©cuniÃ¨re par l'assurance  
+**Franchise** : dÃ©finie contractuellement il s'agit du montant restant Ã  la charge de l'assurÃ© en cas de sinistre  
+**coÃ»t unitaire** : c'est le montant de dÃ©dommagement Ã  la charge du porteur de risque  
+**coÃ»t moyen** : moyenne des coÃ»t unitaire  
+
+**ratio S/P** ou **ratio S/C** : rapport entre la charge des sinistres et les primes (ou cotisations)  
+
+**Prime Pure** : c'est le coÃ»t individuel du risque, soit ce que coute Ã  un assureur, par contrat, le fait d'assurer tout son portefeuille  
+
+
+
+```{r indicateurs}
+library(data.table)
+library(readr)
+
+# Chargement des donnÃ©es
+DT <- data.table(
+  read_delim("data/TD1-Grele.csv", ";", escape_double = FALSE, 
+             locale = locale(decimal_mark = ","), trim_ws = TRUE))
+
+# Calculer les indicateurs manquants
+## Cout Moyen : Prime Pure / FrÃ©quence (x1000 car la frÃ©quence donnÃ©e pour 1000 contrats)
+DT$CM <- DT$PP / DT$Frequence * 1000
+plot(data = DT, CM ~ Annee, main = "Evolution du CoÃ»t Moyen dans le temps","b")
+## Parc ou garanties souscrites : ici on parle de Dommages aux Biens (DAB) des Particuliers
+DT$Parc <- DT$Charge_An_Surv / DT$PP * 100000
+plot(data = DT, Parc ~ Annee, main = "Evolution du Parc assurÃ© dans le temps", type = "l")
+# NB : ce calcul renvoie des valeurs non exacte du fait des arrondis, notamment en 1988, la frÃ©quence Ã©tait non significative, 0.05 pour 1000 semble trop fort...
+## Nombre de sinistre : dÃ©pend du parc, donc il y aura un biais
+DT$Sinistres <- DT$Parc * DT$Frequence / 1000
+plot(data = DT, Sinistres ~ Annee, main = "Estimation du nombre annuel de sinistres grÃªle", type = "b")
+
+
+
+```
+
+
+On notera suite Ã  cet exercice toute la difficultÃ© d'exploiter des donnÃ©es nationales dont on ne dispose pas du meilleur dÃ©tail. \
+Cela montre Ã©galement la limite des donnÃ©es, notamment sur un historique ancien, pourtant nÃ©cessaire pour construire un modÃ¨le statistique.
+
+
+
+### 2.C Les risques climatiques
+
+On retiendra qu'il existe un rÃ©gime spÃ©cifique pour les catastrophes naturelles, ce rÃ©gime fixe lÃ©galement les primes, dont une partie est collectÃ©e par la CCR (Caisse Centrale de RÃ©assurance) un rÃ©assureur de l'Ã©tat FranÃ§ais. En contrepartie, les assureurs cÃ¨dent 50% de leur charge sinistre liÃ©e aux Ã©vÃ¨nement de type Cat Nat. Toutefois, si la CCR et son fond (financÃ© par le MarchÃ©) venait Ã  faire dÃ©faut, l'Ã©tat interviendrait pour compenser les pertes.
+
+Pour les Ã©vÃ¨nements n'entrant pas dans ce rÃ©gime, notamment les TempÃªtes, les assureurs sont libres de rÃ©diger les Conditions GÃ©nÃ©rales de sorte qu'ils peuvent inclure ou exclure certains faits. 
+
+
+## 3 TD - ModÃ©lisation de la Prime Pure annuelle GrÃªle
+```{r TD}
+
+fit <- lm(data = DT, CM ~ 1+Annee)
+summary(fit)
+
+# plot(data = DT, CM ~ Annee)
+# abline(fit,col = 'blue')
+
+
+# Actualisation : idÃ©alement il faudrait comparer l'Ã©volution de la rÃ©gression Ã  celle des indices des rÃ©fÃ©rence (prÃ©conisation : Consommation des MÃ©nages en mÃ©tropole hors tabac de l'INSEE)
+base100 <- data.table(Annee = 1984:2022, CM_lisse = predict(fit,newdata = data.frame(Annee=1984:2022)))
+base100$ref15 <- base100$CM_lisse / base100[Annee==2015]$CM_lisse * 100
+
+# A dÃ©faut on peut s'appuyer sur l'Ã©volution du lissage
+base100$euros22 <- base100[Annee==2022]$CM_lisse / base100$CM_lisse
+
+DT <- merge(DT, base100[,list(Annee,euros22)], by = "Annee", all.x = T)
+DT$PP_actu <- DT$PP * DT$euros22
+
+plot(data=DT,PP_actu ~ Annee, type = "b")
+
+
+# A partir de ces donnÃ©es actualisÃ©es (malgrÃ© un RÂ² de 0,55 sur l'ajustement) nous pouvons nous arrÃªter sur notre sÃ©rie de point Ã  modÃ©liser
+
+plot(density(DT$PP_actu))
+
+library(fitdistrplus)
+descdist(DT$PP_actu)
+
+# Il ressort que la loi Ã  utiliser pour chaque rÃ©gion pourrait-Ãªtre une loi Beta
+
+# La loi Beta est dÃ©finie pour x compris entre 0 et 1
+# Proposition 1 : dÃ©finir une Prime Pure maximale puis recentrer ()
+# Proposition 2 : modifier l'Ã©chelle sur la base des min et max observÃ©s
+# Fonction de calcul des paramÃ¨tre d'une loi beta, avec transformation de l'input
+# 1 - PP max 100â¬ et PP min 0,1â¬
+maxi <- max(DT$PP_actu, 100)
+mini <- min(DT$PP_actu, 0,1)
+xscaled <- (DT$PP_actu-mini)/maxi
+fit.beta <- fitdist(xscaled, "beta",  method = "mse")
+plot(fit.beta); title("BETA")
+# summary(fit.beta)
+
+fit.gamma <- fitdist(DT$PP_actu, "gamma",  method = "mse")
+plot(fit.gamma); title("GAMMA")
+# summary(fit.gamma)
+
+fit.gev <- ismev::gev.fit(DT$PP_actu)
+ismev::gev.diag(fit.gev); title("GEV")
+# summary(fit.gev)
+
+
+```
+
+
+Graphiquement la mÃ©thode qui semble Ãªtre la meilleure est l'ajustement par loi GEV.  
+
+Toutefois les librairies utilisÃ©es pour ajuster les paramÃ¨tres de ces lois ne permettent pas d'obtenir d'indicateurs comparable.  
+Il existe d'autres librairies pour la famille des GEV, l'ajustement des paramÃ¨tre obtenu est similaire, toutefois la comparaison reste dÃ©licate.  
+
+Ãtant donnÃ© la matiÃ¨re (les risques climatiques) et la volatilitÃ© forte de ce domaine, nous privilÃ©gierons une approche GEV.  
+La suite du TD ci aprÃ¨s permet d'obtenir une idÃ©e de la pÃ©riode de retour de l'exercice 2022, il permet aussi d'avoir une idÃ©e, selon chaque modÃ¨le, de la prime pure probable Ã  une pÃ©riode de retour de 200 ans et de 500 ans.  
+
+Enfin, pour faire le lien avec l'exercice initial du cours, ce dernier bloc propose d'Ã©valuer la probabilitÃ© d'observer sur 39 ans (1984 - 2022) une annÃ©e aussi extrÃªme que 2022, selon la pÃ©riode de retour estimÃ©e dans le TD.  
+
+```{r TD_suite}
+
+# Rappel : le lien entre pÃ©riode de retour et probabilitÃ© est : P(X >= x) = 1 - 1/PdR 
+# Ainsi on cherche, Ã  partir des paramÃ¨tres ajustÃ©s de nos lois, le quantile pour une probabilitÃ© de 0.995 (200 ans) et 0.998 (500 ans)
+
+param <- data.table(rbind(
+  data.frame(law = "beta", PP_200ans = round(maxi * qbeta(p = 0.995, fit.beta$estimate[1], fit.beta$estimate[2]) + mini, digits = 2),
+             PP_500ans = round(maxi * qbeta(p = 0.998, fit.beta$estimate[1], fit.beta$estimate[2]) + mini, digits = 2),
+             PdR_2022 = round(1 / (1 - pbeta(q = (DT$PP_actu[DT$Annee == "2022"]-mini)/maxi, fit.beta$estimate[1], fit.beta$estimate[2])), digits = 0)),
+  data.frame(law = "gamma", PP_200ans = round(qgamma(p = 0.995, fit.gamma$estimate[1], fit.gamma$estimate[2]), digits = 2),
+             PP_500ans = round(qgamma(p = 0.998, fit.gamma$estimate[1], fit.gamma$estimate[2]), digits = 2),
+             PdR_2022 = round(1 / (1 - pgamma(q = DT$PP_actu[DT$Annee == "2022"], fit.gamma$estimate[1], fit.gamma$estimate[2])), digits = 0)),
+  data.frame(law = "GEV", PP_200ans = fExtremes::qgev(0.995, mu = fit.gev$vals[1,1], beta = fit.gev$vals[1,2], xi = fit.gev$vals[1,3])[1],
+             PP_500ans = fExtremes::qgev(0.998, mu = fit.gev$vals[1,1], beta = fit.gev$vals[1,2], xi = fit.gev$vals[1,3])[1],
+             PdR_2022 = round(1 / (1 - fExtremes::pgev(DT$PP_actu[DT$Annee == "2022"], mu = fit.gev$vals[1,1], beta = fit.gev$vals[1,2], 
+                                                       xi = fit.gev$vals[1,3])[1]),digits = 0))))
+
+
+param
+
+P <- 1/param$PdR_2022
+tirage <- 2022-1984+1
+reussite <- 1
+round(pnbinom(tirage-reussite,reussite,P)*100,1)
+
+
+```
+
+
+On notera l'Ã©cart entre les lois "usuelles" et la thÃ©orie des valeurs extrÃªmes, particuliÃ¨rement visible sur les PP observable tous les 200 ou 500 ans. L'approche par loi Beta ou loi Gamma reste trÃ¨s proche, 15 centimes d'Ã©carts sur un coÃ»t du risque Ã  200 ans est assez faible.  
+Maintenant, l'approche par les GEV montre un tout autre rÃ©sultat, avec un ratio de 1.7 environ Ã  200 ans et supÃ©rieur Ã  2.3 Ã  500 ans... cela doit Ãªtre bien maÃ®trisÃ© pour une intÃ©gration dans le tarif.  
+Si l'on s'attarde sur les PÃ©riodes de Retour calculÃ©es pour la PP extrÃªme de 2022, l'Ã©cart entre Beta et Gamma et bien plus important (du simple au double) et lÃ  encore, la thÃ©orie des valeurs extrÃªmes nous donne Ã  rÃ©flÃ©chir... 162 ans contre 2450 ans (Gamma) et 4730 (Beta) on parle de facteur x15 / x30  
+
+Enfin, sous hypothÃ¨se de stabilitÃ© et que nos donnÃ©es dans le temps soit bien iid (ou encore toutes choses Ã©gales par ailleurs) nous pouvons estimer que la probabilitÃ© de voir une PP aussi forte sur les 39 derniÃ¨res annÃ©es serait de 21.5% avec l'approche par la thÃ©orie des valeurs extrÃªmes, avec les autres lois, cette proba devient 0.8% ou 1.6%, soit trÃ¨s peu probable.  
+
+A ce stade, la thÃ©orie des valeurs extrÃªmes nous permet de dire que les orages de grÃªles de 2022 restent du domaine du probable, contrairement Ã  une approche plus classique. Toutefois, un faisceau d'indice (hausse de la PP depuis 2013, multiplication des Ã©vÃ¨nements "atypiques", fortes chaleurs 2022 propices aux orages...) laisse penser que le changement climatique pourrait contribuer Ã  une amplification des phÃ©nomÃ¨nes de grÃªle extrÃªme... 
+
+A ce jour, et Ã  ma connaissance, rien n'a Ã©tÃ© prouvÃ©. Il semble cependant Ã©vident que nombre de scientifiques vont s'atteler Ã  ces recherches.
+
+
+NB : si d'ici la fin de la dÃ©cennie nous observons Ã  nouveau des pertes aussi fortes, l'approche de la thÃ©orie des valeurs extrÃªmes croisÃ©e avec l'approche par la loi binomiale nÃ©gative (donc d'observer 2 succÃ¨s sur la pÃ©riode) renvoie une probabilitÃ© d'environ 3%... 
