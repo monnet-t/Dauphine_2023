@@ -464,4 +464,4 @@ kable(ReturnPeriod2)
 
 Nous avons pu proposer 2 méthodes pour estimer les périodes de retour possible pour les ouragans dans les Antilles Françaises. Chaque approche et chaque modèle ayant ses forces et faiblesses. En comparant ces résultats avec les publications disponibles il ressort que nos résultats ne sont pas si loin que ça de ce que d'autres spécialistes ont publiés. On notera toutefois que l'incertitude bien que faible peut avoir un impact fort sur les pertes.
 
-La prochaine étape, maintenant que nous avons une estimation sur l'aléa (le rique Ouragan) consiste à estimer les pertes associées à ces évènements.
+La prochaine étape, maintenant que nous avons une estimation sur l'aléa (le risque Ouragan) consiste à estimer les pertes associées à ces évènements.

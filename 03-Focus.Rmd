@@ -5,9 +5,18 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(pacman)
+pacman::p_load(c("data.table","dplyr","knitr","sf","viridis","leaflet","plotly",
+                 "RColorBrewer","units","mapsf","cartography","fitdistrplus",
+                 "extRemes","evd","stars","gstat"), 
+               install = F, update = F, character.only = T)
+```
+
 # FOCUS - RISQUE OURAGAN EN MARTINIQUE
 
-Avant toute chose, il semble important de rappeler que le cours n°2 traite partiellement de ce sujet. Il sera donc utile de se référer au dernier TP. De plus un exemple d'outil R pour la consultation des ouragans (écrit par Sean JUSTICE) est disponible [https://coveaprm.shinyapps.io/Hurricane_viewer/](ici), tout comme son [https://nycdatascience.com/blog/student-works/visualizing-hurricane-data-with-shiny/](blog).
+Avant toute chose, il semble important de rappeler que le cours n°2 traite partiellement de ce sujet. Il sera donc utile de se référer au dernier TP. De plus un exemple d'outil R pour la consultation des ouragans (écrit par Sean JUSTICE) est disponible [ici](https://coveaprm.shinyapps.io/Hurricane_viewer/), tout comme son [blog](https://nycdatascience.com/blog/student-works/visualizing-hurricane-data-with-shiny/).
 
 ## Les étapes d'un modèle CAT
 
@@ -25,7 +34,7 @@ Le cours jusqu'à aujourd'hui a principalement porté sur cette partie, qui est 
 
 Une façon de décrire l'aléa ouragan, pour la partie vent, consiste à déterminer l'intensité de l'évènement selon l'échelle de Saffir-Simpson
 
-![Echelle de Saffir-Simpson](https://nycdsa-blog-files.s3.us-east-2.amazonaws.com/2019/09/7f1c8f94874e01d4d1439428b43ab51e/saffir-simpson-scale.png)
+![Echelle de Saffir-Simpson](D:/utilisateurs/s046120/Etudes/Ouragans/Saffir-Simpson.png)
 
 NB : 1 nœud (kn) est équivalent à 1.852 km/h, ainsi 64 nœuds, la vitesse de vent moyen d'un ouragan de 1ère catégorie, est d'environ 119 km/h.
 
@@ -69,15 +78,23 @@ Il s'agit ici d'appliquer les notions présentée ci-dessus à notre sujet.
 
 #### 1.1. Les évènements historiques
 
-Dans cette partie, il s'agira de reprendre ce qui a été fait lors du TP précédent en se focalisant uniquement sur la Martinique.
+Dans cette partie, il s'agira de reprendre en partie ce qui a été fait lors du TP précédent en se focalisant uniquement sur la Martinique et sur l'extraction des trajectoires dangereuses.
 
 Afin de définir la taille du Buffer, je propose une étape préalable d'analyse des autres critères de la base Hurdat, à savoir la distance à laquelle il est possible d'observer des vents supérieurs ou égaux à 64 nœuds.
+
+```{r Select_Tracks}
+
+```
 
 #### 1.2. La dispersion des vents
 
 Maintenant que nous disposons d'une série d'évènement, comment les vents se sont-ils réellement comportés ? Pour cette étape il existe plusieurs modèles, plus ou moins précis, utilisant les données à notre disposition et/ou d'autres.
 
-Pour ce cours, nous nous simplifierons la vie, nous allons tenter de projeter le vent en fonction des points à notre disposition par un traitement spatial.
+Pour ce cours, nous nous simplifierons la vie, nous allons tenter de projeter le vent en fonction des points à notre disposition par un traitement spatial : **l'interpolation**.
+
+```{r interpolate}
+
+```
 
 ### 2. L'exposition aux Ouragans
 
@@ -85,13 +102,18 @@ Cette partie est assez rapide, dès lors que l'on réside sur l'île, si l'empru
 
 L'INSEE propose des données carroyées (spatiales) à une maille de 1km, permettant d'estimer la population dans la zone, le nombre de ménage, de logement... Nous travaillerons sur ces éléments.
 
+```{r expo}
+
+```
+
 ### 3. La vulnérabilité en Martinique
 
 Les normes de construction aux Antilles françaises intègrent le risque cyclonique, en tout cas sa partie basse. On peut notamment retrouver ces normes sur le site [suivant](https://www.dlubal.com/fr/zones-de-neige-de-vent-et-de-sismicite/vent-nf-en-1991-1-4.html#&center=44.69283662784916,13.690389420864472&zoom=5&marker=48.854663,2.346203). En Martinique la valeur de base de la vitesse de référence du vent, pour les constructions, a été fixé à 32 m/s (115 km/h).
 
-Dans un calcul exact, nous devrions intégrer un ajustement selon la probabilité et la direction du vent, ainsi que des altérations selon la rugosité du terrain (végétation, urbanisation...) et le relief. Une fois les calculs effectués localement, les constructions neuves sont sensée résister à à une vitesse de vent maximales. On notera que des vitesses inférieures pourrons néanmoins engendrer des dommages réduits.
+![Normes FR pour Europe](D:/utilisateurs/s046120/Etudes/Ouragans/Normes_NF-EN-1991-1-4.png "Normes Eurocode") 
 
-De plus, un grand nombre de bâtiments anciens ou récents, ne respectent pas ces normes, nous avons donc plusieurs courbes de dommages selon le type de bien. Afin de ne pas compliquer trop les choses, nous pourrons prendre une approche moyenne sur l'île.
+
+![Normes NV65](D:/utilisateurs/s046120/Etudes/Ouragans/Normes_NV65.png "Normes NV65")
 
 Dans la littérature scientifique, nous disposons d'une équation permettant de passer d'une vitesse de vent à une fréquence de dommage. Cette équation utilise 2 vitesses : une vitesse à partir de laquelle les dommages sont observables et une vitesse à partir de laquelle 50% des bâtiments sont endommagés. Il s'agite de l'équation du professeur Emanuel K. :
 
@@ -106,7 +128,15 @@ emanuel(180,60,200)
 
 ```
 
-Pour la suite du cours nous partirons du principe qu'en Martinique cette courbe d'endommagement est calée avec une vitesse minimale de 115 km/h (la norme de 32 m/s) et 200 km/h pour la destruction partielle. Afin d'être plus précis, il faudrait calibrer ces courbes sur des données réelles et/ou les ajuster selon le niveau d'urbanisation autour du bâtiment et aussi selon le bâtiment.
+Dans un calcul exact, nous devrions intégrer un ajustement selon la probabilité et la direction du vent, ainsi que des altérations selon la rugosité du terrain (végétation, urbanisation...) et le relief. Une fois les calculs effectués localement, les constructions neuves sont sensée résister à à une vitesse de vent maximales. On notera que des vitesses inférieures pourrons néanmoins engendrer des dommages réduits.
+
+De plus, un grand nombre de bâtiments anciens ou récents, ne respectent pas ces normes, nous avons donc plusieurs courbes de dommages selon le type de bien. Afin de ne pas compliquer trop les choses, nous pourrons prendre une approche moyenne sur l'île.  
+
+A noter qu'avec des données fines et précises, il es possible d'ajuster les paramètres de cette équation physique selon l'endommagement observé dans les portefeuilles assurés.  
+
+
+Pour la suite du cours nous partirons du principe qu'en Martinique cette courbe d'endommagement est calée avec une **vitesse minimale de 115 km/h** (la norme de 32 m/s) et **210 km/h pour la destruction partielle**. Afin d'être plus précis, il faudrait calibrer ces courbes sur des données réelles et/ou les ajuster selon le niveau d'urbanisation autour du bâtiment et aussi selon le bâtiment.  
+
 
 ### 4. La résilience en Martinique
 
@@ -114,11 +144,21 @@ Cette étape est à discuter, nous manquons de recul pour avoir une estimation c
 
 Nous pouvons imaginer également qu'une solidarité se mettrait en place, aux Antilles, avec des artisans et professionnels du bâtiment qui irait (pour un temps) aider à reconstruire chez leurs voisins. Cette solidarité pourrait également se faire entre la métropole et la Martinique, cela aurait nécessairement un cout.
 
-Pour cette partie, nous disposons sur R de quelques données (ancienne) de pertes associées à des ouragans aux états-unis et nous verrons si nous pouvons trouver, en croisant ces éléments à ceux de notre base, un seuil de rupture, que nous reproduirions aux Antilles.
+Pour cette partie, nous disposons sur R de quelques données (ancienne) de pertes associées à des ouragans aux états-unis et nous pourrions voir s'il existe une relation entre les pertes chifrées aux USA en $ et notre base d'évènement, un seuil de rupture fonction de l'intensité. Dans le cas où ce serait le cas, nous reproduirions ce seuil aux Antilles. 
+
+*Cette partie est laissée à la main des étudiants, elle reste facultative dans ce cours bien que très importante.*
+
+```{r USA}
+
+```
+
 
 ### 5. Les pertes associées
 
 Une fois toutes les étapes précédentes traitées, nous disposerons d'un premier modèle d'estimation des pertes associées à des ouragans en Martinique. Ces éléments restent théoriques et ne peuvent être utilisés directement. Toutefois vous disposerez à la fin de ce cours de votre premier modèle Cat.
+
+Dans la correction, nous appliquerons une formule de pertes liée au nombre de sinistres (équation d'Emanuel) et avec des hypothèses basées sur des pertes fournies par le site internet [iii.org](https://www.iii.org/table-archive/222881)
+
 
 ## Pour aller plus loin
 
