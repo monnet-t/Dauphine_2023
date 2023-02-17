@@ -83,16 +83,153 @@ Dans cette partie, il s'agira de reprendre en partie ce qui a été fait lors du
 Afin de définir la taille du Buffer, je propose une étape préalable d'analyse des autres critères de la base Hurdat, à savoir la distance à laquelle il est possible d'observer des vents supérieurs ou égaux à 64 nœuds.
 
 ```{r Select_Tracks}
+# 1 chargement des données HURDAT
+source("./pgm/hurdat.R")
+Atlantic <- data.table(get_hurdat("AL"))
+# Description des données : https://www.aoml.noaa.gov/hrd/hurdat/hurdat2-format.pdf
+
+# 2 - Nettoyage et mise en forme
+Atlantic <- Atlantic[!is.na(DateTime)]
+# On va créer des colonnes pour les couleurs à tracer, la catégorie et en fonction de l'intensité de l'évènement à chaque instant t matérialisé par un point
+Atlantic <- Atlantic %>% mutate(Categ = as.factor(case_when(Status == 'HU' ~ 'Hurricane',
+                                                            Status == 'TS' ~ 'Tropical Storm',
+                                                            Status == 'TD' ~ 'Tropical Depression',
+                                                            TRUE ~ 'Other')),
+                                intensity = as.factor(case_when(Status == 'HU' ~ paste0('Hurricane: ',
+                                                                                        case_when(Atlantic$Wind >= 137 ~ 'Cat5',
+                                                                                                  (Atlantic$Wind >= 113 & Atlantic$Wind < 137) ~ 'Cat4',
+                                                                                                  (Atlantic$Wind >=  96 & Atlantic$Wind < 113) ~ 'Cat3',
+                                                                                                  (Atlantic$Wind >=  83 & Atlantic$Wind <  96) ~ 'Cat2',
+                                                                                                  (Atlantic$Wind >=  64 & Atlantic$Wind <  83) ~ 'Cat1')),
+                                                                Status == 'TS' ~ 'Tropical Storm', 
+                                                                Status == 'TD' ~ 'Tropical Depression',
+                                                                TRUE ~ 'Other')),
+                                Year = as.numeric(year(DateTime)),
+                                Month = as.numeric(month(DateTime)))
+
+# 3 - Transformation en format spatial
+# 3.1 - transformation spatiale
+# Les données de projection sont décalée sur la longitude, avant de transformer la base en données spatial il faut donc les corriger
+Atlantic$Lon[Atlantic$Lon < -300] <- Atlantic$Lon[Atlantic$Lon < -300] + 360
+
+# Rappel : https://epsg.io/4326 : projection de Mercator
+AtlanticSF <- st_as_sf(Atlantic, coords = c("Lon","Lat"), crs = 4326)
+# Visualiser les points 
+# plot(AtlanticSF["intensity"])
+
+# 3.2 - Passage de points à lignes
+Tracks <- AtlanticSF %>% 
+  group_by(Key) %>%
+  summarise(do_union = FALSE) %>%
+  st_cast("LINESTRING")
+
+# 3.2.2 - Nettoyage : certains systèmes n'ont qu'on point et ce type de géométrie n'est pas comaptible avec les lignes... 
+rmv <- Atlantic[,list(points = length(DateTime)), by = list(Key)][points == 1]
+
+Tracks <- Tracks[!(Tracks$Key %in% rmv$Key),]
+
+# 4 - Chargement des contours de la martinique
+# 4.1 - Base à la maille commune
+mtq <- mapsf::mf_get_mtq()
+
+# 4.2 - Agréger des polygones pour obtenir l'île dans son intégralité
+mtq_u <- st_union(mtq)
+plot(st_geometry(mtq), col="lightblue")
+plot(st_geometry(mtq_u), add=T, lwd=2, border = "red")
+
+# 5 - Analyse de la propagation des vents 
+# 5.1 - Distance moyenne par direction d'un vent supérieur ou égal à 64 noeuds (119 km.h limite ouragan), en miles nautiques (1852 m)
+MaxDistVentHU <- Atlantic[Categ == "Hurricane" & !is.na(NE64), 
+                          list(NE64 = mean(NE64,na.rm = T), SE64 = mean(SE64,na.rm = T),
+                               SW64 = mean(SW64,na.rm = T), NW64 = mean(NW64,na.rm = T)), 
+                          by = list(intensity)]
+
+# Pour un système de catégorie 5, les vents forts (supérieurs à 119 km/h ou 64 noeuds) sont observables en moyenne jusqu'à 51 miles (95 km)
+# Nous conserveront donc tous les systèmes dans un rayon de 95 km autour de la Martinique
+
+
+# Liste des évènements dangereux 
+# 5.1.1 - Vérification que la projection est métrique
+if(!st_crs(mtq_u)$input=="EPSG:5490"){
+  mtq_u <- st_transform(mtq_u, crs = 5490)
+}
+
+plot(mtq_u)
+
+# 5.1.2 Ajout d'un buffer de en mètres selon la taille moyenne max calculée à l'étape 5.1
+DangerZone <- st_buffer(x = mtq_u, dist = MaxDistVentHU[,max(.SD), .SDcols = !"intensity"]*1852)
+
+plot(DangerZone, lwd=2, border = "red")
+plot(mtq_u, add = T)
+
+# 5.1.3 Sélection des trajectoires (Tracks) traversant la zone de Danger 
+if(!(st_crs(Tracks) == st_crs(DangerZone))){
+  # Dans le cas où les projection diffèrent, nous corrigeons cela:
+  Tracks <- st_transform(Tracks,st_crs(DangerZone))
+}
+
+# Avec st_intersects on extrait les trajectories qui coupent la zone de danger
+DangerousTracks <- Tracks[unlist(st_intersects(DangerZone, Tracks)),]
+plot(DangerousTracks, add = T, lwd=1)
+
+length(DangerousTracks$Key)
+# 89 trajectoires sélectionnées !!
+
 
 ```
 
 #### 1.2. La dispersion des vents
 
-Maintenant que nous disposons d'une série d'évènement, comment les vents se sont-ils réellement comportés ? Pour cette étape il existe plusieurs modèles, plus ou moins précis, utilisant les données à notre disposition et/ou d'autres.
+Maintenant que nous disposons d'une série d'évènements, comment les vents se sont-ils réellement comportés ? Pour cette étape il existe plusieurs modèles, plus ou moins précis, utilisant les données à notre disposition et/ou d'autres.
 
 Pour ce cours, nous nous simplifierons la vie, nous allons tenter de projeter le vent en fonction des points à notre disposition par un traitement spatial : **l'interpolation**.
 
 ```{r interpolate}
+##### IDW interpolation #####
+
+# 1. Définition de l'espace où effectuer la projection
+xmin = -65
+xmax = -55
+ymax = 17
+ymin = 12
+
+bbox <- st_as_sfc(st_bbox(c(xmin = xmin, xmax = xmax, ymax = ymax, ymin = ymin), crs = st_crs(4326)))
+# Création de la grille : NB nous sommes en projection angulaire, pas idéal mais plus simple
+GridAntilles <- st_make_grid(bbox,cellsize = c(0.1, 0.1))
+
+# Sélection des points de la base inclus dans la zone
+Selection <- st_intersection(x = AtlanticSF, y = bbox)
+# Sélection d'un évènement : cette étape peut s'automatiser dans une fonction afin de traiter les 89 évènements que nous avons isolé à l'étape précédente
+Evt <- Selection[Selection$Key == "AL042007",]
+
+# 2. Interpolation optimale
+# 2.1 Recherche des paramètres optimaux 
+
+# Cross Validation
+do_cv = function(idp) {
+  idw = gstat(id = "zn", formula = Wind~1, data = Evt, set = list(idp = idp))
+  out = gstat.cv(idw,remove.all = T,verbose = F)
+  return(sqrt(mean(out$residual^2))) # RMSE as optimization criterium
+}
+
+# Périmètre testé (the IDW power values that will be checked)
+idw_pow = seq(2,10, by = 0.5) 
+# calculate the rmse
+system.time(cv_vals <- invisible(sapply(idw_pow, do_cv)))
+# Controls
+verif <- data.frame(idp = idw_pow, cv_rmse = cv_vals)
+# We keep the minimum rmse power
+idp = verif[verif$cv_rmse == min(verif$cv_rmse),"idp"]
+
+# Calculate the optimum IDW   
+idw <- gstat::idw(formula = Wind ~ 1,locations = Evt,newdata = GridAntilles,idp = idp)
+
+# 3. Extraction des résultats : focus ile de la Martinique
+mtq_u_4326 <- st_transform(mtq_u,crs = 4326)
+
+join <- st_intersects(mtq_u_4326,idw)
+plot(mtq_u_4326, cex=2, border = "red")
+plot(idw[unlist(join),"var1.pred"], col = viridis(25, alpha = 0.7), add = T)
 
 ```
 
@@ -103,6 +240,28 @@ Cette partie est assez rapide, dès lors que l'on réside sur l'île, si l'empru
 L'INSEE propose des données carroyées (spatiales) à une maille de 1km, permettant d'estimer la population dans la zone, le nombre de ménage, de logement... Nous travaillerons sur ces éléments.
 
 ```{r expo}
+# 1. Chargement des données FILOSOFI de l'INSEE 
+MTQ_1km <- st_read("./data","Filosofi2015_carreaux_1000m_reg02")
+
+# 2. Calcul d'estimateurs simples
+MTQ_1km$niv_vie <- MTQ_1km$Ind_snv / MTQ_1km$Men # Niveau de vie moyen : ratio niveau de vie de la zone et nombre de ménage (= nombre de logements)
+MTQ_1km$Surf_moy <- MTQ_1km$Men_surf / MTQ_1km$Men
+
+# 3. Jointure
+# Création d'une base "DEAN" avec les données de vents de l'évènement avec la projection de la MTQ
+Dean <- st_transform(idw[unlist(join),"var1.pred"], crs = st_crs(MTQ_1km))
+
+# Jointure
+MTQ_1km_2 <- st_join(MTQ_1km, Dean)
+
+# 4. Cartes
+plot(MTQ_1km_2["Men"])
+plot(MTQ_1km_2["niv_vie"])
+plot(MTQ_1km_2["Surf_moy"])
+plot(MTQ_1km_2["var1.pred"])
+
+# Conversion des vents en km/h
+MTQ_1km_2$Wind <- MTQ_1km_2$var1.pred * 1.852
 
 ```
 
@@ -110,8 +269,7 @@ L'INSEE propose des données carroyées (spatiales) à une maille de 1km, permet
 
 Les normes de construction aux Antilles françaises intègrent le risque cyclonique, en tout cas sa partie basse. On peut notamment retrouver ces normes sur le site [suivant](https://www.dlubal.com/fr/zones-de-neige-de-vent-et-de-sismicite/vent-nf-en-1991-1-4.html#&center=44.69283662784916,13.690389420864472&zoom=5&marker=48.854663,2.346203). En Martinique la valeur de base de la vitesse de référence du vent, pour les constructions, a été fixé à 32 m/s (115 km/h).
 
-![Normes FR pour Europe](D:/utilisateurs/s046120/Etudes/Ouragans/Normes_NF-EN-1991-1-4.png "Normes Eurocode") 
-
+![Normes FR pour Europe](D:/utilisateurs/s046120/Etudes/Ouragans/Normes_NF-EN-1991-1-4.png "Normes Eurocode")
 
 ![Normes NV65](D:/utilisateurs/s046120/Etudes/Ouragans/Normes_NV65.png "Normes NV65")
 
@@ -126,17 +284,22 @@ emanuel <- function(V,Vthreshold,Vhalf) {
 }
 emanuel(180,60,200)
 
+# 1. Estimation de la fréquence
+MTQ_1km_2$Freq <- emanuel(MTQ_1km_2$Wind, Vthreshold = 115 ,Vhalf = 210)
+# 2. Estimation de la sinistralité : nombre de logement x fréquence
+MTQ_1km_2$Sin <- MTQ_1km_2$Men * MTQ_1km_2$Freq
+# 3. Carte
+plot(MTQ_1km_2["Sin"])
+
 ```
 
 Dans un calcul exact, nous devrions intégrer un ajustement selon la probabilité et la direction du vent, ainsi que des altérations selon la rugosité du terrain (végétation, urbanisation...) et le relief. Une fois les calculs effectués localement, les constructions neuves sont sensée résister à à une vitesse de vent maximales. On notera que des vitesses inférieures pourrons néanmoins engendrer des dommages réduits.
 
-De plus, un grand nombre de bâtiments anciens ou récents, ne respectent pas ces normes, nous avons donc plusieurs courbes de dommages selon le type de bien. Afin de ne pas compliquer trop les choses, nous pourrons prendre une approche moyenne sur l'île.  
+De plus, un grand nombre de bâtiments anciens ou récents, ne respectent pas ces normes, nous avons donc plusieurs courbes de dommages selon le type de bien. Afin de ne pas compliquer trop les choses, nous pourrons prendre une approche moyenne sur l'île.
 
-A noter qu'avec des données fines et précises, il es possible d'ajuster les paramètres de cette équation physique selon l'endommagement observé dans les portefeuilles assurés.  
+A noter qu'avec des données fines et précises, il es possible d'ajuster les paramètres de cette équation physique selon l'endommagement observé dans les portefeuilles assurés.
 
-
-Pour la suite du cours nous partirons du principe qu'en Martinique cette courbe d'endommagement est calée avec une **vitesse minimale de 115 km/h** (la norme de 32 m/s) et **210 km/h pour la destruction partielle**. Afin d'être plus précis, il faudrait calibrer ces courbes sur des données réelles et/ou les ajuster selon le niveau d'urbanisation autour du bâtiment et aussi selon le bâtiment.  
-
+Pour la suite du cours nous partirons du principe qu'en Martinique cette courbe d'endommagement est calée avec une **vitesse minimale de 115 km/h** (la norme de 32 m/s) et **210 km/h pour la destruction partielle**. Afin d'être plus précis, il faudrait calibrer ces courbes sur des données réelles et/ou les ajuster selon le niveau d'urbanisation autour du bâtiment et aussi selon le bâtiment.
 
 ### 4. La résilience en Martinique
 
@@ -144,14 +307,26 @@ Cette étape est à discuter, nous manquons de recul pour avoir une estimation c
 
 Nous pouvons imaginer également qu'une solidarité se mettrait en place, aux Antilles, avec des artisans et professionnels du bâtiment qui irait (pour un temps) aider à reconstruire chez leurs voisins. Cette solidarité pourrait également se faire entre la métropole et la Martinique, cela aurait nécessairement un cout.
 
-Pour cette partie, nous disposons sur R de quelques données (ancienne) de pertes associées à des ouragans aux états-unis et nous pourrions voir s'il existe une relation entre les pertes chifrées aux USA en $ et notre base d'évènement, un seuil de rupture fonction de l'intensité. Dans le cas où ce serait le cas, nous reproduirions ce seuil aux Antilles. 
+Pour cette partie, nous disposons sur R de quelques données (ancienne) de pertes associées à des ouragans aux états-unis et nous pourrions voir s'il existe une relation entre les pertes chifrées aux USA en \$ et notre base d'évènement, un seuil de rupture fonction de l'intensité. Dans le cas où ce serait le cas, nous reproduirions ce seuil aux Antilles.
 
 *Cette partie est laissée à la main des étudiants, elle reste facultative dans ce cours bien que très importante.*
 
 ```{r USA}
+# http://hurricanescience.org/science/forecast/models/modeltypes/stormsurge/
+
+# Vision Cout Global (US 1926 - 1995, $1995)
+# library(extRemes)
+data(damage)
+
+plot( damage[,1], damage[,3], xlab="", ylab="Economic Damage", type="l", lwd=2)
+
+# Fig. 3 of Katz (2002).
+plot( damage[,"Year"], log( damage[,"Dam"]), xlab="Year", ylab="ln(Damage)", ylim=c(-10,5))
+
+# Fig. 4 of Katz (2002).
+qqnorm( log( damage[,"Dam"]), ylim=c(-10,5))
 
 ```
-
 
 ### 5. Les pertes associées
 
@@ -159,6 +334,41 @@ Une fois toutes les étapes précédentes traitées, nous disposerons d'un premi
 
 Dans la correction, nous appliquerons une formule de pertes liée au nombre de sinistres (équation d'Emanuel) et avec des hypothèses basées sur des pertes fournies par le site internet [iii.org](https://www.iii.org/table-archive/222881)
 
+```{r pertes}
+
+building_cost_model <- function(Wind, Surface){
+  Repair <- emanuel(Wind, Vthreshold = 100 ,Vhalf = 180)
+  CM_repair <- 850 + (2.70 + Repair * 31.75) * Surface
+  # CM_repair <- 850 + (2.70 + pmin(Wind/200, 1) * 31.75) * Surface
+  Rebuilding <- emanuel(Wind, Vthreshold = 180 ,Vhalf = 230)
+  CM_rebuild <- pmax(Rebuilding * (2500 * Surface) - CM_repair, 0)
+  CM <- CM_repair + CM_rebuild
+  return(CM)
+}
+building_cost_model(120,100)
+# building_cost_model(150,100)
+# building_cost_model(180,100)
+# building_cost_model(210,100)
+# building_cost_model(250,100)
+# building_cost_model(300,100)
+
+plot(x = seq(100,250,5),y = building_cost_model(seq(100,250,5),Surface = 100), type = "l")
+
+
+MTQ_1km_2$CM <- building_cost_model(MTQ_1km_2$Wind, MTQ_1km_2$Surf_moy)
+plot(MTQ_1km_2["CM"])
+
+MTQ_1km_2$Ajust_Cost <- MTQ_1km_2$niv_vie / mean(MTQ_1km_2$niv_vie, na.rm = T)
+
+MTQ_1km_2$Ajusted_CM <- MTQ_1km_2$CM * MTQ_1km_2$Ajust_Cost
+plot(MTQ_1km_2["Ajusted_CM"])
+
+MTQ_1km_2$Estimated_loss <- MTQ_1km_2$Sin * MTQ_1km_2$Ajusted_CM
+plot(MTQ_1km_2["Estimated_loss"])
+sum(MTQ_1km_2$Estimated_loss)
+
+
+```
 
 ## Pour aller plus loin
 
